@@ -104,32 +104,43 @@ _ftNumber.handleEvent = function(el, name, cb){
     }
 };
 
+_ftNumber.action = function(options){
+    let struct = options instanceof Object ? options.struct : 'number';
+    return function(evt){
+        let el = this instanceof HTMLElement ? this : evt.target;
+        let self = this === _ftNumber ? this : _ftNumber;
+
+        let key = evt.which || evt.keyCode || evt.charCode || 0;
+        let curPos = el.selectionStart;
+        let value = self.value(el);
+
+        let sep1 = (value.substr(0, curPos).match(/\,/g) || []).length;
+        let fm = self.format(value, options);
+        let sep2 = (fm.substr(0, curPos).match(new RegExp(self.separator(struct), 'g')) || []).length;
+        
+        curPos += Number(sep2 > sep1);
+        el.value = fm;
+        [37, 38, 39, 40].indexOf(key) === -1 && el.setSelectionRange(curPos, curPos);
+    }
+    
+};
+
 _ftNumber.listener = function(el, options){
     if (this.isTextbox(el)){
         let o = options instanceof Object;
         let struct = o ? options.struct : 'number';
         let limit = o && this.isNumber(options.maxLength) ? parseInt(Math.abs(options.maxLength)) : this.limit(struct);
-        let self = this;
 
         this.handleEvent(el, 'keypress', function(evt){
             let key = evt.which || evt.keyCode || evt.charCode || 0;
             [43, 45, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57].indexOf(key) > -1 && 
-            self.value(el).length < limit ||
+            _ftNumber.value(el).length < limit ||
             evt.preventDefault();
         });
 
-        this.handleEvent(el, 'keyup', function(evt){
-            let key = evt.which || evt.keyCode || evt.charCode || 0;
-            let curPos = this.selectionStart;
-            let value = self.value(el);
-            
-            let sep1 = (value.substr(0, curPos).match(/\,/g) || []).length;
-            let fm = self.format(value, options);
-            let sep2 = (fm.substr(0, curPos).match(new RegExp(self.separator(struct), 'g')) || []).length;
-            
-            curPos += Number(sep2 > sep1);
-            this.value = fm;
-            [37, 38, 39, 40].indexOf(key) === -1 && this.setSelectionRange(curPos, curPos);
-        });
+        this.handleEvent(el, 'keyup', this.action(options));
+        this.handleEvent(el, 'paste', this.action(options));
+        this.handleEvent(el, 'cut', this.action(options));
+        this.handleEvent(el, 'change', this.action(options));
     }
 };
