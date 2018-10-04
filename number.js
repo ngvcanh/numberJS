@@ -10,13 +10,25 @@ _ftNumber.isNumber = function(n){
     return typeof(n) === Number.name.toLowerCase() || n instanceof Number || Object.prototype.toString.call(n) === '[object Number]';
 };
 
+_ftNumber.isObject = function(o){
+    return typeof(o) === Object.name.toLowerCase() || o instanceof Object || Object.prototype.toString.call(o) === '[object Object]';
+};
+
+_ftNumber.isArray = function(a){
+    return typeof(a) === Object.name.toLowerCase() && (a instanceof Array || Object.prototype.toString.call(a) === '[object Array]');
+};
+
+_ftNumber.inArray = function(arr, val){
+    return this.isArray(arr) && arr.indexOf(val) > -1;
+};
+
 _ftNumber.limit = function(struct){
     switch(struct){
         case 'phone' : return 11;
         case 'year' : return 4;
         default: return Infinity;
     }
-}
+};
 
 _ftNumber.value = function(el){
     if (this.isTextbox(el)){
@@ -38,14 +50,14 @@ _ftNumber.format = function(value, options){
     let s = 'number';
     value = value.toString();
 
-    if (options instanceof Object){
+    if (this.isObject(options)){
         if ('struct' in options && this.isString(options.struct)) s = options.struct.toLowerCase();
     }
 
     switch(s){
         case 'number':
             let match = value.match(/^\s*(\-|\+)?\s*[\s\d\,\.]+/g);
-            match = (match instanceof Array ? match[0] : '').replace(/\s|\,|\+/g, '');
+            match = (this.isArray(match) ? match[0] : '').replace(/\s|\,|\+/g, '');
 
             let arr = match.split('.');
             let d = arr.shift();
@@ -57,16 +69,16 @@ _ftNumber.format = function(value, options){
 
             let c = '-.0'.split('.').indexOf(c1) > -1 ? c2.replace(/^0+/g, '') : c1 + c2 ;
             c = c.split('').reverse().join('').match(/.{1,3}/g);
-            c = (c instanceof Array ? c.join(this.separator(s)) : '').split('').reverse().join('');
+            c = (this.isArray(c) ? c.join(this.separator(s)) : '').split('').reverse().join('');
 
             f = f.replace(/0+$/g, '');
             f = f.match(/.{1,3}/g);
-            f = f instanceof Array ? f.join(',') : '';
+            f = this.isArray(f) ? f.join(',') : '';
 
             return ('-' === c1 ? c1 : '') + c + (f || l ? '.' : '') + f;
         case 'year':
             let find = value.match(/^\s*\d{0,4}/g);
-            return (find instanceof Array ? find[0] : '').replace(/\s/g, '');
+            return (this.isArray(find) ? find[0] : '').replace(/\s/g, '');
         case 'phone':
 
             break;
@@ -105,7 +117,7 @@ _ftNumber.handleEvent = function(el, name, cb){
 };
 
 _ftNumber.action = function(options){
-    let struct = options instanceof Object ? options.struct : 'number';
+    let struct = this.isObject(options) ? options.struct : 'number';
     return function(evt){
         let el = this instanceof HTMLElement ? this : evt.target;
         let self = this === _ftNumber ? this : _ftNumber;
@@ -127,9 +139,8 @@ _ftNumber.action = function(options){
 
 _ftNumber.listener = function(el, options){
     if (this.isTextbox(el)){
-        let o = options instanceof Object;
-        let struct = o ? options.struct : 'number';
-        let limit = o && this.isNumber(options.maxLength) ? parseInt(Math.abs(options.maxLength)) : this.limit(struct);
+        let struct = this.isObject(options) ? options.struct : 'number';
+        let limit = this.isObject(options) && this.isNumber(options.maxLength) ? parseInt(Math.abs(options.maxLength)) : this.limit(struct);
 
         this.handleEvent(el, 'keypress', function(evt){
             let key = evt.which || evt.keyCode || evt.charCode || 0;
